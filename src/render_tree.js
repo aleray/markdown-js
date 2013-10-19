@@ -152,6 +152,9 @@ define(['./core', './markdown_helpers'], function(Markdown, MarkdownHelpers) {
 
     // convert this node
     switch ( jsonml[ 0 ] ) {
+    case "timecode":
+      jsonml[ 0 ] = "section";
+      break;
     case "header":
       jsonml[ 0 ] = "h" + jsonml[ 1 ].level;
       delete jsonml[ 1 ].level;
@@ -189,6 +192,9 @@ define(['./core', './markdown_helpers'], function(Markdown, MarkdownHelpers) {
       break;
     case "linebreak":
       jsonml[ 0 ] = "br";
+      break;
+    case "span":
+      jsonml[ 0 ] = "span";
       break;
     case "link":
       jsonml[ 0 ] = "a";

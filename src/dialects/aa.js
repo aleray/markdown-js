@@ -1,3 +1,9 @@
+/**
+ * TODO: document
+ * TODO: simplify the timecode regex
+ * TODO: fill missing ends on timecode sections
+ * TODO: finish semantic wikilinks
+ */
 if (typeof define !== 'function') { var define = require('amdefine')(module) }
 define(['../markdown_helpers', './dialect_helpers', './maruku', '../parser'], function (MarkdownHelpers, DialectHelpers, Maruku, Markdown) {
 
@@ -24,7 +30,10 @@ define(['../markdown_helpers', './dialect_helpers', './maruku', '../parser'], fu
       inner.push(next.shift());
     }
 
-    return [ this.toTree(inner, [ "timecode", {"data-begin": m[1], "data-end": m[10]} ]) ];
+    var begin = [ "span", {"property": "aa:begin"}, m[1] ];
+    var end = [ "span", {"property": "aa:end"}, m[10] ];
+
+    return [ [ "section", {"typeof": "aa:annotation", "data-begin": m[1], "data-end": m[10]}, begin, " \u2192 ", end, this.toTree(inner, [ "div", {"property": "aa:content"} ]) ] ];
   };
 
 

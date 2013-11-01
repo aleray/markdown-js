@@ -1,7 +1,6 @@
 /**
  * TODO: document
  * TODO: simplify the timecode regex
- * TODO: fill missing ends on timecode sections
  */
 if (typeof define !== 'function') { var define = require('amdefine')(module) }
 define(['../markdown_helpers', './dialect_helpers', './maruku', '../parser'], function (MarkdownHelpers, DialectHelpers, Maruku, Markdown) {
@@ -17,13 +16,33 @@ define(['../markdown_helpers', './dialect_helpers', './maruku', '../parser'], fu
    * Adds supports for srt-like timed sections.
    */
   Aa.block['timecode'] =  function timecode( block, next ) {
+    // matches expressions like "00:00:00 --> 00:00:10"
     var re = /^\s{0,3}(((\d{1,2})(:))?(\d\d):(\d\d)([,\.](\d{1,3}))?)\s*-->(\s*(((\d{1,2})(:))?(\d\d):(\d\d)([,\.](\d{1,3}))?))?\s*(?:\n|$)/,
       m = block.match( re );
 
+    // stops here if there is no match
     if ( !m )
       return undefined;
 
+    // references the begin and end groups
+    var begin = m[1],
+      end = m[10];
+
+    // if not specified, sets the end of the previous timed section with the
+    // current value for begin
+    var previous = this.tree[this.tree.length - 1],
+      previousAttrs = previous[1];
+
+    if (previousAttrs['data-begin'] && !previousAttrs['data-end']) {
+      previousAttrs['data-end'] = begin;
+      previous.splice(3, 0, [ "span", {"property": "aa:end"}, begin ]);
+    }
+
+    // collects the content of the timed section; that is the following blocks
+    // until an other timed section is found, or the end of the source text is
+    // reached.
     var inner = [];
+
     while (next.length) {
       var found = next[0].match(re);
 
@@ -32,10 +51,21 @@ define(['../markdown_helpers', './dialect_helpers', './maruku', '../parser'], fu
       inner.push(next.shift());
     }
 
-    var begin = [ "span", {"property": "aa:begin"}, m[1] ];
-    var end = [ "span", {"property": "aa:end"}, m[10] ];
+    // constructs the JSONML to push to the tree
+    var attrs = {"typeof": "aa:annotation", "data-begin": begin};
+    var section = [ "section", attrs ];
+    
+    section.push([ "span", {"property": "aa:begin"}, begin ]);
 
-    return [ [ "section", {"typeof": "aa:annotation", "data-begin": m[1], "data-end": m[10]}, begin, " \u2192 ", end, this.toTree(inner, [ "div", {"property": "aa:content"} ]) ] ];
+    // sets the end only if the group was matched
+    if (end) {
+      attrs["data-end"] = end;
+      section.push([ "span", {"property": "aa:end"}, end ]);
+    }
+
+    section.push(this.toTree(inner, [ "div", {"property": "aa:content"} ]));
+
+    return [ section ];
   };
 
 

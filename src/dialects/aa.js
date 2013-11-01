@@ -98,7 +98,7 @@ define(['../markdown_helpers', './dialect_helpers', './maruku', '../parser'], fu
    *    <span content="Second Self" property="dc:title">Second Self</span> was
    *    an early book on the social aspects of computation.</p>
    */
-  Aa.inline[ "%%" ] = function semanticwikilink( text ) {
+  Aa.inline[ "%%" ] = function semanticdata( text ) {
     var m = text.match( /^\%\%\s*(?:((\w+):)?([^\%#]+?)\s*::)?\s*(.+?)\s*(?:\|\s*([^\]]+?)\s*)?\%\%(?!\%)/ );
 
     if ( m ) {

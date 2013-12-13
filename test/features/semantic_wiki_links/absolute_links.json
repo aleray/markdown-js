@@ -1,0 +1,8 @@
+["html",
+  ["p",
+    ["a",
+      { "rel" : "aa:embed", "href" : "http://example.com/video.ogv"  },
+      "http://example.com/video.ogv"
+    ]
+  ]
+]

@@ -87,7 +87,10 @@ define(['../markdown_helpers', './dialect_helpers', './maruku', '../parser'], fu
     var m = text.match( /^\[\[\s*(?:((\w+):)?([^\]#]+?)\s*::)?\s*(.+?)\s*(?:\|\s*(.+?)\s*)?\]\](?!\])/ );
 
     var wikify = function(target) {
-      return target;
+      function capitaliseFirstLetter(string) {
+        return string.charAt(0).toUpperCase() + string.slice(1);
+      }
+      return '../' + encodeURIComponent(capitaliseFirstLetter(target.replace(/\s+/g, '_')));
     };
 
     if ( m ) {

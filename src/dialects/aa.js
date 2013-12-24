@@ -35,7 +35,7 @@ define(['../markdown_helpers', './dialect_helpers', './maruku', '../parser'], fu
 
     if (previousAttrs['data-begin'] && !previousAttrs['data-end']) {
       previousAttrs['data-end'] = begin;
-      previous.splice(3, 0, [ "span", {"property": "aa:end"}, begin ]);
+      previous.splice(3, 0, [ "span", {"property": "aa:end", "class": "deduced"}, begin ]);
     }
 
     // collects the content of the timed section; that is the following blocks

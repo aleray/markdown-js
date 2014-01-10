@@ -1,0 +1,67 @@
+[
+  "html",
+  [
+    "section",
+    {
+      "typeof": "aa:annotation",
+      "data-begin": "00:00:00",
+      "data-end": "00:00:05"
+    },
+    [
+      "span",
+      {
+        "property": "aa:begin"
+      },
+      "00:00:00"
+    ],
+    [
+      "span",
+      {
+        "property": "aa:end"
+      },
+      "00:00:05"
+    ],
+    [
+      "div",
+      {
+        "property": "aa:content"
+      },
+      [
+        "p",
+        "content"
+      ]
+    ]
+  ],
+  [
+    "section",
+    {
+      "typeof": "aa:annotation",
+      "data-begin": "00:00:05",
+      "data-end": "00:00:10"
+    },
+    [
+      "span",
+      {
+        "property": "aa:begin"
+      },
+      "00:00:05"
+    ],
+    [
+      "span",
+      {
+        "property": "aa:end"
+      },
+      "00:00:10"
+    ],
+    [
+      "div",
+      {
+        "property": "aa:content"
+      },
+      [
+        "p",
+        "content 2"
+      ]
+    ]
+  ]
+]

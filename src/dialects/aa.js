@@ -51,14 +51,21 @@ define(['../markdown_helpers', './dialect_helpers', './maruku', '../parser'], fu
    *
    * is rendered as:
    *
-   *    <a href="/SherryTurkle" rel="aa:Speaker"></a>
+   *    <a href="Sherry_Turkle" rel="aa:Speaker">Second Self</a>
    */
   Aa.inline[ "[[" ] = function semanticwikilink( text ) {
     var m = text.match( /^\[\[\s*(?:((\w+):)?([^\]#]+?)\s*::)?\s*(.+?)\s*(?:\|\s*(.+?)\s*)?\]\](?!\])/ );
 
     var wikify = function(target) {
-      return target;
-    };
+        // Links like 'sherry Turkle' will get wikified.
+        // Links like /pages/sherry_Turkle will not get wikified.
+        // Links like http://example.com/sherry_turkle.ogv will not get wikified
+        if (target.indexOf("/") === -1) {
+          target = target.replace(' ', '_');
+          target = target.charAt(0).toUpperCase() + target.substr(1);
+        }
+        return target;
+      };
 
     if ( m ) {
       var ns = m[2] || 'aa';

@@ -81,16 +81,32 @@ define(['../markdown_helpers', './dialect_helpers', './maruku', '../parser'], fu
    *
    * is rendered as:
    *
-   *    <a href="/SherryTurkle" rel="aa:Speaker"></a>
+   *    <a href="Sherry_Turkle" rel="aa:Speaker">Second Self</a>
    */
   Aa.inline[ "[[" ] = function semanticwikilink( text ) {
     var m = text.match( /^\[\[\s*(?:((\w+):)?([^\]#]+?)\s*::)?\s*(.+?)\s*(?:\|\s*(.+?)\s*)?\]\](?!\])/ );
 
     var wikify = function(target) {
-      function capitaliseFirstLetter(string) {
-        return string.charAt(0).toUpperCase() + string.slice(1);
+      // Links like 'sherry Turkle' will get wikified.
+      // Links like 'sherry.jpeg' will not get wikified.
+      // Links like /pages/sherry_Turkle will not get wikified.
+      // Links like http://example.com/sherry_turkle.ogv will not get wikified
+      if (target.indexOf("/") === -1 && !target.match(/.*\.(\w+)$/)) {
+        var parts = target.match(/([^#]*)#*([^#]*)/);
+        var path = parts[1];
+        var hash = parts[2];
+        var capitaliseFirstLetter = function(string) {
+          return string.charAt(0).toUpperCase() + string.slice(1);
+        };
+        var path = capitaliseFirstLetter(path.replace(/\s+/g, '_'));
+        var uri = encodeURIComponent(path);
+        if (hash) {
+          // do not escape =, so we can have #t=3.5
+          uri += '#' + encodeURIComponent(hash).replace('%3D', '=');
+        }
+        return uri;
       }
-      return '../' + encodeURIComponent(capitaliseFirstLetter(target.replace(/\s+/g, '_')));
+      return target;
     };
 
     if ( m ) {

@@ -232,7 +232,7 @@ define(['../markdown_helpers', './dialect_helpers', './maruku', '../parser'], fu
         var path = parts[1];
         var hash = parts[2];
         
-        var uri = encodeURIComponent( capitaliseFirstLetter( spaceToUnderscore( path ) ) );
+        var uri = '../' + encodeURIComponent( capitaliseFirstLetter( spaceToUnderscore( path ) ) );
         
         if (hash) {
           // do not escape =, so we can have #t=3.5

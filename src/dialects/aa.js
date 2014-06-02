@@ -30,9 +30,17 @@ define(['../markdown_helpers', './dialect_helpers', './maruku', '../parser'], fu
   function ms2tc (ms) {
     var _, ms = ms, ss, mm, hh;
 
-    _ = divmod(ms, 1000); ss = _[0]; ms = _[1];
-    _ = divmod(ss, 3600); hh = _[0]; ss = _[1];
-    _ = divmod(ss, 60); mm = _[0]; ss = _[1];
+    _ = divmod(ms, 1000);
+    ss = _[0];
+    ms = _[1];
+    
+    _ = divmod(ss, 3600);
+    hh = _[0];
+    ss = _[1];
+
+    _ = divmod(ss, 60);
+    mm = _[0];
+    ss = _[1];
 
     ms = rpad(hh, 3);
     ss = lpad(ss, 2);
@@ -77,9 +85,9 @@ define(['../markdown_helpers', './dialect_helpers', './maruku', '../parser'], fu
       end;
 
     // stops here if there is no match
-    if ( !m ) { 
-        return undefined 
-    };
+    if ( !m ) {
+      return undefined;
+    }
 
     // if not specified, sets the end of the previous timed section with the
     // current value for begin

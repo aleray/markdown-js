@@ -8,6 +8,9 @@ define(['../markdown_helpers', './dialect_helpers', '../parser'], function (Mark
       isEmpty = MarkdownHelpers.isEmpty,
       inline_until_char = DialectHelpers.inline_until_char;
 
+  // A robust regexp for matching URLs. Thanks: https://gist.github.com/dperini/729294
+  var urlRegexp = /(?:(?:https?|ftp):\/\/)(?:\S+(?::\S*)?@)?(?:(?!10(?:\.\d{1,3}){3})(?!127(?:\.\d{1,3}){3})(?!169\.254(?:\.\d{1,3}){2})(?!192\.168(?:\.\d{1,3}){2})(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))|(?:(?:[a-z\u00a1-\uffff0-9]+-?)*[a-z\u00a1-\uffff0-9]+)(?:\.(?:[a-z\u00a1-\uffff0-9]+-?)*[a-z\u00a1-\uffff0-9]+)*(?:\.(?:[a-z\u00a1-\uffff]{2,})))(?::\d{2,5})?(?:\/[^\s]*)?/i.source;
+
   /**
    * Gruber dialect
    *
@@ -331,16 +334,24 @@ define(['../markdown_helpers', './dialect_helpers', '../parser'], function (Mark
             } // tight_search
 
             if ( li_accumulate.length ) {
-              add( last_li, loose, this.processInline( li_accumulate ), nl );
 
-              // Let's not creating a trailing \n after content in the li
-              if(last_li[last_li.length-1] === "\n") {
-                last_li.pop();
+              var contents = this.processBlock(li_accumulate, []),
+                  firstBlock = contents[0];
+
+              if (firstBlock) {
+                firstBlock.shift();
+                contents.splice.apply(contents, [0, 1].concat(firstBlock));
+                add( last_li, loose, contents, nl );
+
+                // Let's not creating a trailing \n after content in the li
+                if(last_li[last_li.length-1] === "\n") {
+                  last_li.pop();
+                }
+
+                // Loose mode will have been dealt with. Reset it
+                loose = false;
+                li_accumulate = "";
               }
-
-              // Loose mode will have been dealt with. Reset it
-              loose = false;
-              li_accumulate = "";
             }
 
             // Look at the next block - we might have a loose list. Or an extra
@@ -361,7 +372,7 @@ define(['../markdown_helpers', './dialect_helpers', '../parser'], function (Mark
               block = next.shift();
 
               // Check for an HR following a list: features/lists/hr_abutting
-              var hr = this.dialect.block.horizRule( block, next );
+              var hr = this.dialect.block.horizRule.call( this, block, next );
 
               if ( hr ) {
                 ret.push.apply(ret, hr);
@@ -522,7 +533,7 @@ define(['../markdown_helpers', './dialect_helpers', '../parser'], function (Mark
         return out;
       },
 
-      // These characters are intersting elsewhere, so have rules for them so that
+      // These characters are interesting elsewhere, so have rules for them so that
       // chunks of plain text blocks don't include them
       "]": function () {},
       "}": function () {},
@@ -541,6 +552,9 @@ define(['../markdown_helpers', './dialect_helpers', '../parser'], function (Mark
 
       "![": function image( text ) {
 
+        // Without this guard V8 crashes hard on the RegExp
+        if (text.indexOf('(') >= 0 && text.indexOf(')') === -1) { return; }
+
         // Unlike images, alt text is plain text only. no other elements are
         // allowed in there
 
@@ -549,7 +563,7 @@ define(['../markdown_helpers', './dialect_helpers', '../parser'], function (Mark
         //
         // First attempt to use a strong URL regexp to catch things like parentheses. If it misses, use the
         // old one.
-        var m = text.match( /^!\[(.*?)][ \t]*\(((?:https?:(?:\/{1,3}|[a-z0-9%])|www\d{0,3}[.])(?:[^\s()<>]+|\([^\s()<>]+\))+(?:\([^\s()<>]+\)|[^`!()\[\]{};:'".,<>?«»“”‘’\s]))\)([ \t])*(["'].*["'])?/ ) ||
+        var m = text.match(new RegExp("^!\\[(.*?)][ \\t]*\\((" + urlRegexp + ")\\)([ \\t])*([\"'].*[\"'])?")) ||
                 text.match( /^!\[(.*?)\][ \t]*\([ \t]*([^")]*?)(?:[ \t]+(["'])(.*?)\3)?[ \t]*\)/ );
 
         if ( m ) {
@@ -580,13 +594,23 @@ define(['../markdown_helpers', './dialect_helpers', '../parser'], function (Mark
 
       "[": function link( text ) {
 
+        var open = 1;
+        for (var i=0; i<text.length; i++) {
+          var c = text.charAt(i);
+          if (c === '[') { open++; }
+          if (c === ']') { open--; }
+
+          if (open > 3) { return [1, "["]; }
+        }
+
         var orig = String(text);
         // Inline content is possible inside `link text`
         var res = inline_until_char.call( this, text.substr(1), "]" );
 
         // No closing ']' found. Just consume the [
-        if ( !res )
-          return [ 1, "[" ];
+        if ( !res[1] ) {
+          return [ res[0] + 1, text.charAt(0) ].concat(res[2]);
+        }
 
         var consumed = 1 + res[ 0 ],
             children = res[ 1 ],
@@ -640,10 +664,16 @@ define(['../markdown_helpers', './dialect_helpers', '../parser'], function (Mark
           return [ consumed, link ];
         }
 
+        m = text.match(new RegExp("^\\((" + urlRegexp + ")\\)"));
+        if (m && m[1]) {
+          consumed += m[0].length;
+          link = ["link", {href: m[1]}].concat(children);
+          return [consumed, link];
+        }
+
         // [Alt text][id]
         // [Alt text] [id]
         m = text.match( /^\s*\[(.*?)\]/ );
-
         if ( m ) {
 
           consumed += m[ 0 ].length;
@@ -651,12 +681,14 @@ define(['../markdown_helpers', './dialect_helpers', '../parser'], function (Mark
           // [links][] uses links as its reference
           attrs = { ref: ( m[ 1 ] || String(children) ).toLowerCase(),  original: orig.substr( 0, consumed ) };
 
-          link = [ "link_ref", attrs ].concat( children );
+          if (children && children.length > 0) {
+            link = [ "link_ref", attrs ].concat( children );
 
-          // We can't check if the reference is known here as it likely wont be
-          // found till after. Check it in md tree->hmtl tree conversion.
-          // Store the original so that conversion can revert if the ref isn't found.
-          return [ consumed, link ];
+            // We can't check if the reference is known here as it likely wont be
+            // found till after. Check it in md tree->hmtl tree conversion.
+            // Store the original so that conversion can revert if the ref isn't found.
+            return [ consumed, link ];
+          }
         }
 
         // Another check for references
@@ -735,7 +767,7 @@ define(['../markdown_helpers', './dialect_helpers', '../parser'], function (Mark
         //D:this.debug("closing", md);
         this[state_slot].shift();
 
-        // "Consume" everything to go back to the recrusion in the else-block below
+        // "Consume" everything to go back to the recursion in the else-block below
         return[ text.length, new CloseTag(text.length-md.length) ];
       }
       else {

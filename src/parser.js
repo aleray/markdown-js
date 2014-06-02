@@ -19,17 +19,21 @@ define(['./markdown_helpers', './core'], function(MarkdownHelpers, Markdown) {
     return md.toTree( source );
   };
 
+  /**
+   *  count_lines( str ) -> count
+   *  - str (String): String whose lines we want to count
+   *
+   *  Counts the number of linebreaks in `str`
+   **/
   function count_lines( str ) {
-    var n = 0,
-        i = -1;
-    while ( ( i = str.indexOf("\n", i + 1) ) !== -1 )
-      n++;
-    return n;
+    return str.split("\n").length - 1;
   }
 
   // Internal - split source into rough blocks
   Markdown.prototype.split_blocks = function splitBlocks( input ) {
-    input = input.replace(/(\r\n|\n|\r)/g, "\n");
+    // Normalize linebreaks to \n.
+    input = input.replace(/\r\n?/g, "\n");
+    // Match until the end of the string, a newline followed by #, or two or more newlines.
     // [\s\S] matches _anything_ (newline or space)
     // [^] is equivalent but doesn't work in IEs.
     var re = /([\s\S]+?)($|\n#|\n(?:\s*\n|$)+)/g,
@@ -88,10 +92,11 @@ define(['./markdown_helpers', './core'], function(MarkdownHelpers, Markdown) {
       //D:this.debug( "Testing", ord[i] );
       var res = cbs[ ord[i] ].call( this, block, next );
       if ( res ) {
-        //D:this.debug("  matched");
-        if ( !isArray(res) || ( res.length > 0 && !( isArray(res[0]) ) ) )
-          this.debug(ord[i], "didn't return a proper array");
-        //D:this.debug( "" );
+
+        if ( !isArray(res) || ( res.length > 0 && !( isArray(res[0]) ) && ( typeof res[0] !== "string")) ) {
+          this.debug(ord[i], "didn't return proper JsonML");
+        }
+
         return res;
       }
     }
@@ -178,7 +183,7 @@ define(['./markdown_helpers', './core'], function(MarkdownHelpers, Markdown) {
       // __foo__ is reserved and not a pattern
       if ( i.match( /^__.*__$/) )
         continue;
-      var l = i.replace( /([\\.*+?|()\[\]{}])/g, "\\$1" )
+      var l = i.replace( /([\\.*+?^$|()\[\]{}])/g, "\\$1" )
                .replace( /\n/, "\\n" );
       patterns.push( i.length === 1 ? l : "(?:" + l + ")" );
     }

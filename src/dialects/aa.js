@@ -11,6 +11,60 @@ define(['../markdown_helpers', './dialect_helpers', './maruku', '../parser'], fu
 
   Aa.processMetaHash = Maruku.processMetaHash;
 
+  function rpad (n, width, z) {
+    z = z || '0';
+    n = n + '';
+    return n.length >= width ? n : n + new Array(width - n.length + 1).join(z);
+  }
+
+  function lpad (n, width, z) {
+    z = z || '0';
+    n = n + '';
+    return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
+  }
+
+  function divmod (a, b) {
+    return [ Math.floor(a / b), a % b ];
+  }
+
+  function ms2tc (ms) {
+    var _, ms = ms, ss, mm, hh;
+
+    _ = divmod(ms, 1000); ss = _[0]; ms = _[1];
+    _ = divmod(ss, 3600); hh = _[0]; ss = _[1];
+    _ = divmod(ss, 60); mm = _[0]; ss = _[1];
+
+    ms = rpad(hh, 3);
+    ss = lpad(ss, 2);
+    mm = lpad(mm, 2);
+    hh = lpad(hh, 2);
+
+    return hh + ':' + mm + ':' + ss + ',' + ms;
+  }
+
+  function ss2tc (ss) {
+    return ms2tc(ss * 1000);
+  }
+
+  function tc2ss (tc) {
+    var pattern = /^(?:(\d{1,2}):)?(\d{1,2}):(\d{1,2})(?:,(\d+))?$/,
+      match = tc.match(pattern),
+      ret = NaN;
+
+    if (match) {
+      ret = match[1]
+        ? parseInt(match[1], 10) * 3600
+        : 0;
+      ret += parseInt(match[2], 10) * 60;
+      ret += parseInt(match[3], 10);
+      ret += match[4]
+        ? parseFloat('0.' + match[4])
+        : 0;
+    }
+
+    return ret;
+  }
+
 
   /**
    * Adds supports for srt-like timed sections.
@@ -41,11 +95,11 @@ define(['../markdown_helpers', './dialect_helpers', './maruku', '../parser'], fu
       begin = previousAttrs['data-end'];
 
       if ( !m[2] ) {
-        end = begin.toSeconds() + (previousAttrs['data-end'].toSeconds() - previousAttrs['data-begin'].toSeconds())  
+        end = tc2ss(begin) + (tc2ss(previousAttrs['data-end']) - tc2ss(previousAttrs['data-begin']));
       } else {
-        end = begin.toSeconds() + dur.toSeconds();
+        end = tc2ss(begin) + tc2ss(dur);
       }
-      end = '0' + end.secondsTo('hh:mm:ss.ms');
+      end = ss2tc(end);
     }
 
     // collects the content of the timed section; that is the following blocks
@@ -243,133 +297,6 @@ define(['../markdown_helpers', './dialect_helpers', './maruku', '../parser'], fu
   Markdown.dialects.Aa = Aa;
   Markdown.buildBlockOrder ( Markdown.dialects.Aa.block );
   Markdown.buildInlinePatterns( Markdown.dialects.Aa.inline );
-
-
-
-/**
- * $media jQuery plugin (v.2.1.1)
- *
- * 2012. Created by Oscar Otero (http://oscarotero.com / http://anavallasuiza.com)
- *
- * $media is released under the GNU Affero GPL version 3.
- * More information at http://www.gnu.org/licenses/agpl-3.0.html
- */
-
-/**
- * Extends the String object to convert any number to seconds
- *
- * '00:34'.toSeconds(); // 34
- *
- * @return float The value in seconds
- */
-String.prototype.toSeconds = function () {
-    'use strict';
-
-    var time = this, ms;
-
-    if (/^([0-9]{1,2}:)?[0-9]{1,2}:[0-9]{1,2}(\.[0-9]+)?(,[0-9]+)?$/.test(time)) {
-        time = time.split(':', 3);
-
-        if (time.length === 3) {
-            ms = time[2].split(',', 2);
-            ms[1] = ms[1] || 0;
-
-            return ((((parseInt(time[0], 10) * 3600) + (parseInt(time[1], 10) * 60) + parseFloat(ms[0])) * 1000) + parseInt(ms[1], 10)) / 1000;
-        }
-
-        ms = time[1].split(',', 1);
-        ms[1] = ms[1] || 0;
-
-        return ((((parseInt(time[0], 10) * 60) + parseFloat(ms[0])) * 1000) + parseInt(ms[1], 10)) / 1000;
-    }
-
-    return parseFloat(time).toSeconds();
-};
-
-
-
-/**
- * Extends the String object to convert any number value to seconds
- *
- * '34'.secondsTo('mm:ss'); // '00:34'
- *
- * @param string outputFormat One of the avaliable output formats ('ms', 'ss', 'mm:ss', 'hh:mm:ss', 'hh:mm:ss.ms')
- *
- * @return string The value in the new format
- */
-String.prototype.secondsTo = function (outputFormat) {
-    'use strict';
-
-    return this.toSeconds().secondsTo(outputFormat);
-};
-
-
-
-/**
- * Extends the Number object to convert any number to seconds
- *
- * (23.34345).toSeconds(); // 23.343
- *
- * @return float The value in seconds
- */
-Number.prototype.toSeconds = function () {
-    'use strict';
-
-    return Math.floor(this * 1000) / 1000;
-};
-
-
-/**
- * Extends the Number object to convert any number value to seconds
- *
- * 34.secondsTo('mm:ss'); // '00:34'
- *
- * @param string outputFormat One of the avaliable output formats ('ms', 'ss', 'mm:ss', 'hh:mm:ss', 'hh:mm:ss.ms')
- *
- * @return string The value in the new format
- */
-Number.prototype.secondsTo = function (outputFormat) {
-    'use strict';
-
-    var time = this;
-
-    switch (outputFormat) {
-        case 'ms':
-            return Math.floor(time * 1000);
-
-        case 'ss':
-            return Math.floor(time);
-
-        case 'mm:ss':
-        case 'hh:mm:ss':
-        case 'hh:mm:ss.ms':
-            var hh = '';
-
-            if (outputFormat !== 'mm:ss') {
-                hh = Math.floor(time / 3600);
-                time = time - (hh * 3600);
-                hh += ':';
-            }
-
-            var mm = Math.floor(time / 60);
-            time = time - (mm * 60);
-            mm = (mm < 10) ? ("0" + mm) : mm;
-            mm += ':';
-
-            var ss = time;
-
-            if (outputFormat.indexOf('.ms') === -1) {
-                ss = Math.floor(ss);
-            } else {
-                ss = Math.floor(ss*1000)/1000;
-            }
-            ss = (ss < 10) ? ("0" + ss) : ss;
-
-            return hh + mm + ss;
-    }
-
-    return time;
-};
 
   return Aa;
 });

@@ -42,7 +42,7 @@ define(['../markdown_helpers', './dialect_helpers', './maruku', '../parser'], fu
     mm = _[0];
     ss = _[1];
 
-    ms = rpad(hh, 3);
+    ms = rpad(ms, 3);
     ss = lpad(ss, 2);
     mm = lpad(mm, 2);
     hh = lpad(hh, 2);
@@ -55,7 +55,7 @@ define(['../markdown_helpers', './dialect_helpers', './maruku', '../parser'], fu
   }
 
   function tc2ss (tc) {
-    var pattern = /^(?:(\d{1,2}):)?(\d{1,2}):(\d{1,2})(?:,(\d+))?$/,
+    var pattern = /^(?:(\d{1,2}):)?(\d{1,2}):(\d{1,2})(?:[,\.](\d+))?$/,
       match = tc.match(pattern),
       ret = NaN;
 
@@ -94,20 +94,19 @@ define(['../markdown_helpers', './dialect_helpers', './maruku', '../parser'], fu
     var previous = this.tree[this.tree.length - 1],
       previousAttrs = previous[1];
 
-    var dur = m[2] || "00:00:05";
+    var dur = m[2] ? tc2ss(m[2]) : 5;
 
     if (!previousAttrs['data-end']) {
-      begin = '00:00:00';
+      begin = 0;
       end = dur;
     } else {
-      begin = previousAttrs['data-end'];
+      begin = parseFloat(previousAttrs['data-end']);
 
       if ( !m[2] ) {
-        end = tc2ss(begin) + (tc2ss(previousAttrs['data-end']) - tc2ss(previousAttrs['data-begin']));
+        end = begin + (parseFloat(previousAttrs['data-end']) - parseFloat(previousAttrs['data-begin']));
       } else {
-        end = tc2ss(begin) + tc2ss(dur);
+        end = begin + dur;
       }
-      end = ss2tc(end);
     }
 
     // collects the content of the timed section; that is the following blocks
@@ -124,15 +123,15 @@ define(['../markdown_helpers', './dialect_helpers', './maruku', '../parser'], fu
     }
 
     // constructs the JSONML to push to the tree
-    var attrs = {"typeof": "aa:annotation", "data-begin": begin};
+    var attrs = {"typeof": "aa:annotation", "data-begin": "" + begin};
     var section = [ "section", attrs ];
     
-    section.push([ "span", {"property": "aa:begin"}, begin ]);
+    section.push([ "span", {"property": "aa:begin", "content": "" + begin, "datatype": "xsd:float"}, ss2tc(begin) ]);
 
     // sets the end only if the group was matched
     if (end) {
-      attrs["data-end"] = end;
-      section.push([ "span", {"property": "aa:end"}, end ]);
+      attrs["data-end"] = "" + end;
+      section.push([ "span", {"property": "aa:end", "content": "" + end, "datatype": "xsd:float"}, ss2tc(end) ]);
     }
 
     section.push(this.toTree(inner, [ "div", {"property": "aa:content"} ]));
@@ -154,8 +153,8 @@ define(['../markdown_helpers', './dialect_helpers', './maruku', '../parser'], fu
       return undefined;
 
     // references the begin and end groups
-    var begin = m[1],
-      end = m[10];
+    var begin = tc2ss(m[1]),
+      end = m[10] ? tc2ss(m[10]) : m[10];
 
     // if not specified, sets the end of the previous timed section with the
     // current value for begin
@@ -163,8 +162,8 @@ define(['../markdown_helpers', './dialect_helpers', './maruku', '../parser'], fu
       previousAttrs = previous[1];
 
     if (previousAttrs['data-begin'] && !previousAttrs['data-end']) {
-      previousAttrs['data-end'] = begin;
-      previous.splice(3, 0, [ "span", {"property": "aa:end", "class": "deduced"}, begin ]);
+      previousAttrs['data-end'] = "" + begin;
+      previous.splice(3, 0, [ "span", {"property": "aa:end", "content": "" + begin, "datatype": "xsd:float", "class": "deduced"}, ss2tc(begin) ]);
     }
 
     // collects the content of the timed section; that is the following blocks
@@ -181,15 +180,15 @@ define(['../markdown_helpers', './dialect_helpers', './maruku', '../parser'], fu
     }
 
     // constructs the JSONML to push to the tree
-    var attrs = {"typeof": "aa:annotation", "data-begin": begin};
+    var attrs = {"typeof": "aa:annotation", "data-begin": "" + begin};
     var section = [ "section", attrs ];
     
-    section.push([ "span", {"property": "aa:begin"}, begin ]);
+    section.push([ "span", {"property": "aa:begin", "content": "" + begin, "datatype": "xsd:float"}, ss2tc(begin) ]);
 
     // sets the end only if the group was matched
     if (end) {
-      attrs["data-end"] = end;
-      section.push([ "span", {"property": "aa:end"}, end ]);
+      attrs["data-end"] = "" + end;
+      section.push([ "span", {"property": "aa:end", "content": "" + end, "datatype": "xsd:float"}, ss2tc(end) ]);
     }
 
     section.push(this.toTree(inner, [ "div", {"property": "aa:content"} ]));

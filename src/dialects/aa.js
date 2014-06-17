@@ -250,6 +250,12 @@ define(['../markdown_helpers', './dialect_helpers', './maruku', '../parser'], fu
 
       attrs['href'] = wikify(target);
 
+      // sets the target attribute to "_blank" if we are dealing with an
+      // external URL
+      if (/^(f|ht)tps?:\/\//i.test(target)) {
+        attrs['target'] = "_blank";
+      }
+
       return [ m[0].length, [ "link", attrs, label || target ] ];
     }
 

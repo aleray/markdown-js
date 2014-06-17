@@ -1,7 +1,7 @@
 ["html",
   ["p",
     ["a",
-      { "rel" : "aa:embed", "href" : "http://example.com/video.ogv"  },
+      { "rel" : "aa:embed", "href" : "http://example.com/video.ogv", "target" : "_blank" },
       "http://example.com/video.ogv"
     ]
   ]

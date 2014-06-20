@@ -172,9 +172,10 @@ define(['../markdown_helpers', './dialect_helpers', './maruku', '../parser'], fu
     // until an other timed section is found, or the end of the source text is
     // reached.
     var inner = [];
+    var found;
 
     while (next.length) {
-      var found = next[0].match(re);
+      found = next[0].match(re);
 
       if ( found ) { break; }
 
@@ -187,11 +188,18 @@ define(['../markdown_helpers', './dialect_helpers', './maruku', '../parser'], fu
     
     section.push([ "span", {"property": "aa:begin", "content": "" + begin, "datatype": "xsd:float"}, ss2tc(begin) ]);
 
-    // sets the end only if the group was matched
     if (end) {
+      // sets the end if the group was matched
       attrs["data-end"] = "" + end;
       section.push([ "span", {"property": "aa:end", "content": "" + end, "datatype": "xsd:float"}, ss2tc(end) ]);
+    } else if (!found) {
+      // if there is no subsequent timed section, and the end time has not been
+      // set, it inherits from the begin time
+      end = begin;
+      attrs["data-end"] = "" + end;
+      section.push([ "span", {"property": "aa:end", "content": "" + end, "datatype": "xsd:float", "class": "deduced"}, ss2tc(end) ]);
     }
+
 
     section.push(this.toTree(inner, [ "div", {"property": "aa:content"} ]));
 

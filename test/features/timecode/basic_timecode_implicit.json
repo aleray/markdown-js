@@ -42,7 +42,7 @@
     {
       "typeof": "aa:annotation",
       "data-begin": "5",
-      "data-end": "10"
+      "data-end": "5"
     },
     [
       "span",
@@ -57,10 +57,11 @@
       "span",
       {
         "property": "aa:end",
-        "content": "10",
-        "datatype": "xsd:float"
+        "content": "5",
+        "datatype": "xsd:float",
+        "class": "deduced"
       },
-      "00:00:10,000"
+      "00:00:05,000"
     ],
     [
       "div",

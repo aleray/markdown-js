@@ -222,14 +222,18 @@ define(['../markdown_helpers', './dialect_helpers', './maruku', '../parser'], fu
       // Links like /pages/sherry_Turkle will not get wikified.
       // Links like http://example.com/sherry_turkle.ogv will not get wikified
       if (target.indexOf("/") === -1 && !target.match(/.*\.(\w+)$/)) {
-        var parts = target.match(/([^#]*)#*([^#]*)/);
-        var path = parts[1];
-        var hash = parts[2];
         var capitaliseFirstLetter = function(string) {
           return string.charAt(0).toUpperCase() + string.slice(1);
         };
-        var path = capitaliseFirstLetter(path.replace(/\s+/g, '_'));
-        var uri = encodeURIComponent(path);
+        var spaceToUnderscore = function(str) {
+          return str.replace(/\s+/g, '_');
+        };
+        var parts = target.match(/([^#]*)#*([^#]*)/);
+        var path = parts[1];
+        var hash = parts[2];
+        
+        var uri = '../' + encodeURIComponent( capitaliseFirstLetter( spaceToUnderscore( path ) ) );
+        
         if (hash) {
           // do not escape =, so we can have #t=3.5
           uri += '#' + encodeURIComponent(hash).replace('%3D', '=');

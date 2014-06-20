@@ -226,7 +226,7 @@ define(['../markdown_helpers', './dialect_helpers', './maruku', '../parser'], fu
           return string.charAt(0).toUpperCase() + string.slice(1);
         };
         var spaceToUnderscore = function(str) {
-            return str.replace(/\s+/g, '_');
+          return str.replace(/\s+/g, '_');
         };
         var parts = target.match(/([^#]*)#*([^#]*)/);
         var path = parts[1];

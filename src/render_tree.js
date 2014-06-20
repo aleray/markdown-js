@@ -100,6 +100,10 @@ define(['./core', './markdown_helpers'], function(Markdown, MarkdownHelpers) {
     if ( typeof jsonml === "string" )
       return escapeHTML( jsonml );
 
+    if ( jsonml[0] === "__RAW" ) {
+      return jsonml[1];
+    }
+
     var tag = jsonml.shift(),
         attributes = {},
         content = [];

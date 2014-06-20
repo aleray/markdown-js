@@ -73,7 +73,7 @@ dialects.Gruber = [
 dialects.Maruku = dialects.Gruber.slice( 0 );
 dialects.Maruku.push( "meta", "definition_lists", "tables" );
 dialects.Aa = dialects.Maruku.slice( 0 );
-dialects.Aa.push("timecode", "semantic_wiki_links");
+dialects.Aa.push("timecode", "semantic_wiki_links", "html_blocks");
 
 // TODO if dialects/features were passed on the command line, filter to them
 // if ( args.length )

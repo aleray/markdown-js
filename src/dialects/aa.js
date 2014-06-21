@@ -42,7 +42,9 @@ define(['../markdown_helpers', './dialect_helpers', './maruku', '../parser'], fu
     mm = _[0];
     ss = _[1];
 
-    ms = rpad(hh, 3);
+    ms = parseInt(ms, 10);
+
+    ms = rpad(ms, 3);
     ss = lpad(ss, 2);
     mm = lpad(mm, 2);
     hh = lpad(hh, 2);
@@ -55,7 +57,7 @@ define(['../markdown_helpers', './dialect_helpers', './maruku', '../parser'], fu
   }
 
   function tc2ss (tc) {
-    var pattern = /^(?:(\d{1,2}):)?(\d{1,2}):(\d{1,2})(?:,(\d+))?$/,
+    var pattern = /^(?:(\d{1,2}):)?(\d{1,2}):(\d{1,2})(?:[,\.](\d+))?$/,
       match = tc.match(pattern),
       ret = NaN;
 
@@ -94,20 +96,19 @@ define(['../markdown_helpers', './dialect_helpers', './maruku', '../parser'], fu
     var previous = this.tree[this.tree.length - 1],
       previousAttrs = previous[1];
 
-    var dur = m[2] || "00:00:05";
+    var dur = m[2] ? tc2ss(m[2]) : 5;
 
     if (!previousAttrs['data-end']) {
-      begin = '00:00:00';
+      begin = 0;
       end = dur;
     } else {
-      begin = previousAttrs['data-end'];
+      begin = parseFloat(previousAttrs['data-end']);
 
       if ( !m[2] ) {
-        end = tc2ss(begin) + (tc2ss(previousAttrs['data-end']) - tc2ss(previousAttrs['data-begin']));
+        end = begin + (parseFloat(previousAttrs['data-end']) - parseFloat(previousAttrs['data-begin']));
       } else {
-        end = tc2ss(begin) + tc2ss(dur);
+        end = begin + dur;
       }
-      end = ss2tc(end);
     }
 
     // collects the content of the timed section; that is the following blocks
@@ -124,15 +125,15 @@ define(['../markdown_helpers', './dialect_helpers', './maruku', '../parser'], fu
     }
 
     // constructs the JSONML to push to the tree
-    var attrs = {"typeof": "aa:annotation", "data-begin": begin};
+    var attrs = {"typeof": "aa:annotation", "data-begin": "" + begin};
     var section = [ "section", attrs ];
     
-    section.push([ "span", {"property": "aa:begin"}, begin ]);
+    section.push([ "span", {"property": "aa:begin", "content": "" + begin, "datatype": "xsd:float"}, ss2tc(begin) ]);
 
     // sets the end only if the group was matched
     if (end) {
-      attrs["data-end"] = end;
-      section.push([ "span", {"property": "aa:end"}, end ]);
+      attrs["data-end"] = "" + end;
+      section.push([ "span", {"property": "aa:end", "content": "" + end, "datatype": "xsd:float"}, ss2tc(end) ]);
     }
 
     section.push(this.toTree(inner, [ "div", {"property": "aa:content"} ]));
@@ -154,8 +155,8 @@ define(['../markdown_helpers', './dialect_helpers', './maruku', '../parser'], fu
       return undefined;
 
     // references the begin and end groups
-    var begin = m[1],
-      end = m[10];
+    var begin = tc2ss(m[1]),
+      end = m[10] ? tc2ss(m[10]) : m[10];
 
     // if not specified, sets the end of the previous timed section with the
     // current value for begin
@@ -163,17 +164,18 @@ define(['../markdown_helpers', './dialect_helpers', './maruku', '../parser'], fu
       previousAttrs = previous[1];
 
     if (previousAttrs['data-begin'] && !previousAttrs['data-end']) {
-      previousAttrs['data-end'] = begin;
-      previous.splice(3, 0, [ "span", {"property": "aa:end", "class": "deduced"}, begin ]);
+      previousAttrs['data-end'] = "" + begin;
+      previous.splice(3, 0, [ "span", {"property": "aa:end", "content": "" + begin, "datatype": "xsd:float", "class": "deduced"}, ss2tc(begin) ]);
     }
 
     // collects the content of the timed section; that is the following blocks
     // until an other timed section is found, or the end of the source text is
     // reached.
     var inner = [];
+    var found;
 
     while (next.length) {
-      var found = next[0].match(re);
+      found = next[0].match(re);
 
       if ( found ) { break; }
 
@@ -181,20 +183,54 @@ define(['../markdown_helpers', './dialect_helpers', './maruku', '../parser'], fu
     }
 
     // constructs the JSONML to push to the tree
-    var attrs = {"typeof": "aa:annotation", "data-begin": begin};
+    var attrs = {"typeof": "aa:annotation", "data-begin": "" + begin};
     var section = [ "section", attrs ];
     
-    section.push([ "span", {"property": "aa:begin"}, begin ]);
+    section.push([ "span", {"property": "aa:begin", "content": "" + begin, "datatype": "xsd:float"}, ss2tc(begin) ]);
 
-    // sets the end only if the group was matched
     if (end) {
-      attrs["data-end"] = end;
-      section.push([ "span", {"property": "aa:end"}, end ]);
+      // sets the end if the group was matched
+      attrs["data-end"] = "" + end;
+      section.push([ "span", {"property": "aa:end", "content": "" + end, "datatype": "xsd:float"}, ss2tc(end) ]);
+    } else if (!found) {
+      // if there is no subsequent timed section, and the end time has not been
+      // set, it inherits from the begin time
+      end = begin;
+      attrs["data-end"] = "" + end;
+      section.push([ "span", {"property": "aa:end", "content": "" + end, "datatype": "xsd:float", "class": "deduced"}, ss2tc(end) ]);
     }
+
 
     section.push(this.toTree(inner, [ "div", {"property": "aa:content"} ]));
 
     return [ section ];
+  };
+
+
+  Aa.block['htmlBlock'] = function htmlBlock( block, next ) {
+    if ( block.match( /^<\w/ ) && block.match( /\/>\s*$|<\/\s*\w+\s*>\s*$/ ) ) {
+      return [["__RAW", block.toString()]];
+    }
+  };
+
+
+  Aa.inline['<'] = function htmlOrAutoLink( text ) {
+    var m;
+
+    if ( ( m = text.match( /^<(?:((https?|ftp|mailto):[^>]+)|(.*?@.*?\.[a-zA-Z]+))>/ ) ) !== null ) {
+      if ( m[3] )
+        return [ m[0].length, [ "link", { href: "mailto:" + m[3] }, m[3] ] ];
+      else if ( m[2] === "mailto" )
+        return [ m[0].length, [ "link", { href: m[1] }, m[1].substr("mailto:".length ) ] ];
+      else
+        return [ m[0].length, [ "link", { href: m[1] }, m[1] ] ];
+    }
+
+    if ( text.match( /^<\w/ ) && text.match( /\/>\s*$|<\/\s*\w+\s*>/ ) ) {
+      return [ text.length, ["__RAW", text]];
+    }
+
+    return [ 1, "<" ];
   };
 
 
@@ -221,14 +257,18 @@ define(['../markdown_helpers', './dialect_helpers', './maruku', '../parser'], fu
       // Links like /pages/sherry_Turkle will not get wikified.
       // Links like http://example.com/sherry_turkle.ogv will not get wikified
       if (target.indexOf("/") === -1 && !target.match(/.*\.(\w+)$/)) {
-        var parts = target.match(/([^#]*)#*([^#]*)/);
-        var path = parts[1];
-        var hash = parts[2];
         var capitaliseFirstLetter = function(string) {
           return string.charAt(0).toUpperCase() + string.slice(1);
         };
-        var path = capitaliseFirstLetter(path.replace(/\s+/g, '_'));
-        var uri = encodeURIComponent(path);
+        var spaceToUnderscore = function(str) {
+          return str.replace(/\s+/g, '_');
+        };
+        var parts = target.match(/([^#]*)#*([^#]*)/);
+        var path = parts[1];
+        var hash = parts[2];
+        
+        var uri = '../' + encodeURIComponent( capitaliseFirstLetter( spaceToUnderscore( path ) ) );
+        
         if (hash) {
           // do not escape =, so we can have #t=3.5
           uri += '#' + encodeURIComponent(hash).replace('%3D', '=');
@@ -250,6 +290,12 @@ define(['../markdown_helpers', './dialect_helpers', './maruku', '../parser'], fu
       }
 
       attrs['href'] = wikify(target);
+
+      // sets the target attribute to "_blank" if we are dealing with an
+      // external URL
+      if (/^(f|ht)tps?:\/\//i.test(target)) {
+        attrs['target'] = "_blank";
+      }
 
       return [ m[0].length, [ "link", attrs, label || target ] ];
     }
@@ -300,6 +346,16 @@ define(['../markdown_helpers', './dialect_helpers', './maruku', '../parser'], fu
     // Just consume the '[['
     return [ 2, "%%" ];
   };
+
+
+  // Exposes the various utils because they might be useful elsewhere
+  Aa.utils = Aa.utils || {};
+  Aa.utils.rpad = rpad;
+  Aa.utils.lpad = lpad;
+  Aa.utils.divmod = divmod;
+  Aa.utils.ms2tc = ms2tc;
+  Aa.utils.ss2tc = ss2tc;
+  Aa.utils.tc2ss = tc2ss;
 
 
   Markdown.dialects.Aa = Aa;

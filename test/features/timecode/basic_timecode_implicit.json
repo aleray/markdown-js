@@ -4,23 +4,27 @@
     "section",
     {
       "typeof": "aa:annotation",
-      "data-begin": "00:00:00",
-      "data-end": "00:00:05"
+      "data-begin": "0",
+      "data-end": "5"
     },
     [
       "span",
       {
-        "property": "aa:begin"
+        "property": "aa:begin",
+        "content": "0",
+        "datatype": "xsd:float"
       },
-      "00:00:00"
+      "00:00:00,000"
     ],
     [
       "span",
       {
         "property": "aa:end",
+        "content": "5",
+        "datatype": "xsd:float",
         "class": "deduced"
       },
-      "00:00:05"
+      "00:00:05,000"
     ],
     [
       "div",
@@ -37,22 +41,27 @@
     "section",
     {
       "typeof": "aa:annotation",
-      "data-begin": "00:00:05",
-      "data-end": "00:00:10"
+      "data-begin": "5",
+      "data-end": "5"
     },
     [
       "span",
       {
-        "property": "aa:begin"
+        "property": "aa:begin",
+        "content": "5",
+        "datatype": "xsd:float"
       },
-      "00:00:05"
+      "00:00:05,000"
     ],
     [
       "span",
       {
-        "property": "aa:end"
+        "property": "aa:end",
+        "content": "5",
+        "datatype": "xsd:float",
+        "class": "deduced"
       },
-      "00:00:10"
+      "00:00:05,000"
     ],
     [
       "div",

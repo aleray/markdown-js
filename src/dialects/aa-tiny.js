@@ -3,84 +3,22 @@
  * TODO: simplify the timecode regex
  */
 if (typeof define !== 'function') { var define = require('amdefine')(module) }
-define(['../markdown_helpers', './dialect_helpers', '../parser'], function (MarkdownHelpers, DialectHelpers, Markdown) {
+define(['../markdown_helpers', './dialect_helpers', '../parser', './aa'], function (MarkdownHelpers, DialectHelpers, Markdown, Aa) {
 
-  var Bb = {
+  var AaTiny = {
     block: {
     },
     inline: {
     }
   };
 
-  function rpad (n, width, z) {
-    z = z || '0';
-    n = n + '';
-    return n.length >= width ? n : n + new Array(width - n.length + 1).join(z);
-  }
-
-  function lpad (n, width, z) {
-    z = z || '0';
-    n = n + '';
-    return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
-  }
-
-  function divmod (a, b) {
-    return [ Math.floor(a / b), a % b ];
-  }
-
-  function ms2tc (ms) {
-    var _, ms = ms, ss, mm, hh;
-
-    _ = divmod(ms, 1000);
-    ss = _[0];
-    ms = _[1];
-    
-    _ = divmod(ss, 3600);
-    hh = _[0];
-    ss = _[1];
-
-    _ = divmod(ss, 60);
-    mm = _[0];
-    ss = _[1];
-
-    ms = parseInt(ms, 10);
-
-    ms = rpad(ms, 3);
-    ss = lpad(ss, 2);
-    mm = lpad(mm, 2);
-    hh = lpad(hh, 2);
-
-    return hh + ':' + mm + ':' + ss + ',' + ms;
-  }
-
-  function ss2tc (ss) {
-    return ms2tc(ss * 1000);
-  }
-
-  function tc2ss (tc) {
-    var pattern = /^(?:(\d{1,2}):)?(\d{1,2}):(\d{1,2})(?:[,\.](\d+))?$/,
-      match = tc.match(pattern),
-      ret = NaN;
-
-    if (match) {
-      ret = match[1]
-        ? parseInt(match[1], 10) * 3600
-        : 0;
-      ret += parseInt(match[2], 10) * 60;
-      ret += parseInt(match[3], 10);
-      ret += match[4]
-        ? parseFloat('0.' + match[4])
-        : 0;
-    }
-
-    return ret;
-  }
-
+  var tc2ss = Aa.utils.tc2ss;
+  var ss2tc = Aa.utils.ss2tc;
 
   /**
    * Adds supports for srt-like timed sections.
    */
-  Bb.block['slide'] =  function timecode( block, next ) {
+  AaTiny.block['slide'] =  function timecode( block, next ) {
     // matches expressions like "%< 00:00:05"
     var re = /^\s{0,3}8<(\s*(((\d{1,2})(:))?(\d\d):(\d\d)([,\.](\d{1,3}))?))?\s*(?:\n|$)/,
       m = block.match( re ),
@@ -146,7 +84,7 @@ define(['../markdown_helpers', './dialect_helpers', '../parser'], function (Mark
   /**
    * Adds supports for srt-like timed sections.
    */
-  Bb.block['timecode'] =  function timecode( block, next ) {
+  AaTiny.block['timecode'] =  function timecode( block, next ) {
     // matches expressions like "00:00:00 --> 00:00:10"
     var re = /^\s{0,3}(((\d{1,2})(:))?(\d\d):(\d\d)([,\.](\d{1,3}))?)\s*-->(\s*(((\d{1,2})(:))?(\d\d):(\d\d)([,\.](\d{1,3}))?))?\s*(?:\n|$)/,
       m = block.match( re );
@@ -208,8 +146,8 @@ define(['../markdown_helpers', './dialect_helpers', '../parser'], function (Mark
    *
    *  Takes markdown (as a string) and turns it into Subrip.
    **/
-  Bb.toSRT = function toHTML( source ) {
-    var tree = Markdown.parse(source, "Bb");
+  AaTiny.toSRT = function toHTML( source ) {
+    var tree = Markdown.parse(source, "AaTiny");
     var nodes = tree.splice(1);
 
     var output = "";
@@ -234,8 +172,8 @@ define(['../markdown_helpers', './dialect_helpers', '../parser'], function (Mark
    *
    *  Takes markdown (as a string) and turns it into Audacity markers.
    **/
-  Bb.toAudacity = function toHTML( source ) {
-    var tree = Markdown.parse(source, "Bb");
+  AaTiny.toAudacity = function toHTML( source ) {
+    var tree = Markdown.parse(source, "AaTiny");
     var nodes = tree.splice(1);
 
     var output = "";
@@ -258,8 +196,8 @@ define(['../markdown_helpers', './dialect_helpers', '../parser'], function (Mark
   };
 
 
-  Markdown.dialects.Bb = Bb;
-  Markdown.buildBlockOrder ( Markdown.dialects.Bb.block );
+  Markdown.dialects.AaTiny = AaTiny;
+  Markdown.buildBlockOrder ( Markdown.dialects.AaTiny.block );
 
-  return Bb;
+  return AaTiny;
 });

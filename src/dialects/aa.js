@@ -2,7 +2,7 @@
  * TODO: document
  * TODO: simplify the timecode regex
  */
-if (typeof define !== 'function') { var define = require('amdefine')(module) }
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
 define(['../markdown_helpers', './dialect_helpers', './maruku', '../parser'], function (MarkdownHelpers, DialectHelpers, Maruku, Markdown) {
 
   var Aa = DialectHelpers.subclassDialect( Maruku ),
@@ -267,7 +267,11 @@ define(['../markdown_helpers', './dialect_helpers', './maruku', '../parser'], fu
         var path = parts[1];
         var hash = parts[2];
         
-        var uri = '../' + encodeURIComponent( capitaliseFirstLetter( spaceToUnderscore( path ) ) );
+        // FIXME The first test here is to avoid adding ../ if there is only a #fragment-identifier as it
+        // will lead away from the current page
+        // We should probably not be adding the ../ in the first place— can we change our wikilinks syntax to be
+        // /pages/slug instead of /pages/slug/ ? 
+        var uri =  (path ? '../' : '') + encodeURIComponent( capitaliseFirstLetter( spaceToUnderscore( path ) ) );
         
         if (hash) {
           // do not escape =, so we can have #t=3.5

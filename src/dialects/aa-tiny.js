@@ -156,7 +156,7 @@ define(['../markdown_helpers', './dialect_helpers', '../parser', './aa'], functi
       var leaf = nodes[i];
 
       output += (i + 1) + "\n";
-      output += leaf[1]["data-begin"] + " --> " + leaf[1]["data-end"] + "\n";
+      output += ss2tc(leaf[1]["data-begin"]) + " --> " + ss2tc(leaf[1]["data-end"]) + "\n";
       for (var j = 0, m = leaf[2].length; j < m; j ++) {
         output += leaf[2][j] + "\n\n";
       }

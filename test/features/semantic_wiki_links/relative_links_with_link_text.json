@@ -1,7 +1,7 @@
 ["html",
   ["p",
     ["a",
-      { "rel" : "aa:Speaker", "href" : "../Sherry"  },
+      { "rel" : "aa:Speaker", "href" : "Sherry"  },
       "Second Self"
     ]
   ]
